@@ -5,8 +5,9 @@
 HARBOR_URL="http://localhost:8080"
 
 # Учетные данные
-USERNAME="admin"
-PASSWORD="Harbor12345"
+# Для автоматизации рекомендуется использовать робот-аккаунт
+USERNAME="robot$project+scanner"  # Робот-аккаунт
+PASSWORD="your_robot_token"       # Токен робот-аккаунта
 
 # Дополнительные настройки
 TIMEOUT=300
