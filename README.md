@@ -89,7 +89,7 @@ chmod +x *.sh
 ```bash
 # Harbor Configuration
 HARBOR_URL="http://localhost:8080"
-AUTH="robot$project+scanner:your_robot_token"  # Basic Auth: username:password
+AUTH_TOKEN="cm9ib3QkcHJvamVjdCtzY2FubmVyOnlvdXJfcm9ib3RfdG9rZW4="  # Base64(username:password)
 TIMEOUT=300
 VERBOSE=false
 ```
@@ -139,14 +139,24 @@ VERBOSE=false
 ### Параметры конфигурации:
 
 - `HARBOR_URL` - URL вашего Harbor Registry
-- `AUTH` - Basic Auth в формате `username:password` или `robot$project+scanner:token`
+- `AUTH_TOKEN` - Base64-кодированный Basic Auth токен
 - `TIMEOUT` - таймаут для операций (в секундах)
 - `VERBOSE` - подробный вывод (true/false)
 
-**Примеры AUTH:**
-- `AUTH="admin:Harbor12345"` - обычный пользователь
-- `AUTH="robot$project+scanner:abc123def456"` - робот-аккаунт
-- `AUTH="robot$library+scanner:token123"` - робот для проекта library
+**Примеры AUTH_TOKEN:**
+```bash
+# Обычный пользователь
+echo -n "admin:Harbor12345" | base64
+# Результат: YWRtaW46SGFyYm9yMTIzNDU=
+
+# Робот-аккаунт
+echo -n "robot$project+scanner:abc123def456" | base64
+# Результат: cm9ib3QkcHJvamVjdCtzY2FubmVyOmFiYzEyM2RlZjQ1Ng==
+
+# Робот для конкретного проекта
+echo -n "robot$library+scanner:token123" | base64
+# Результат: cm9ib3QkbGlicmFyeStzY2FubmVyOnRva2VuMTIz
+```
 
 **⚠️ Важно:** Файл `harbor.conf` исключен из Git для безопасности. Не коммитьте файлы с реальными паролями!
 

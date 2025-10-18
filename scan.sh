@@ -34,7 +34,7 @@ show_help() {
     echo "  $0 --all --force              # Принудительно сканировать все проекты"
     echo ""
     echo "Доступные проекты:"
-    curl -s -u "$AUTH" "$HARBOR_URL/api/v2.0/projects" | jq -r '.[].name' 2>/dev/null || echo "Не удалось получить список проектов"
+    curl -s -H "Authorization: Basic $AUTH_TOKEN" "$HARBOR_URL/api/v2.0/projects" | jq -r '.[].name' 2>/dev/null || echo "Не удалось получить список проектов"
 }
 
 # Функция для получения всех данных с пагинацией
@@ -46,7 +46,7 @@ get_all_paginated() {
     
     while true; do
         local current_url="${url}?page=${page}&page_size=${page_size}"
-        local response=$(curl -s -u "$AUTH" "$current_url")
+        local response=$(curl -s -H "Authorization: Basic $AUTH_TOKEN" "$current_url")
         
         if [ $? -ne 0 ]; then
             echo "❌ Ошибка при получении данных с страницы $page" >&2
@@ -68,7 +68,7 @@ $page_data"
         fi
         
         # Проверяем, есть ли следующая страница
-        local next_link=$(curl -s -I -u "$AUTH" "$current_url" | grep -i "link:" | grep -o 'rel="next"' || true)
+        local next_link=$(curl -s -I -H "Authorization: Basic $AUTH_TOKEN" "$current_url" | grep -i "link:" | grep -o 'rel="next"' || true)
         if [ -z "$next_link" ]; then
             break
         fi
@@ -87,7 +87,7 @@ scan_artifact() {
     
     echo "📦 Сканирование: $project/$repo@${digest:0:19}..."
     
-    response=$(curl -s -X POST -u "$AUTH" \
+    response=$(curl -s -X POST -H "Authorization: Basic $AUTH_TOKEN" \
         -H "Content-Type: application/json" \
         -H "X-Requested-With: XMLHttpRequest" \
         -d '{}' \
@@ -108,7 +108,7 @@ check_artifact_scan() {
     local repo=$2
     local digest=$3
     
-    local scan_info=$(curl -s -u "$AUTH" \
+    local scan_info=$(curl -s -H "Authorization: Basic $AUTH_TOKEN" \
         "$HARBOR_URL/api/v2.0/projects/$project/repositories/$repo/artifacts/$digest?with_scan_overview=true" | \
         jq -r '.scan_overview."application/vnd.security.vulnerability.report; version=1.1"')
     
@@ -167,13 +167,13 @@ scan_project() {
     fi
     
     # Проверяем, существует ли проект
-    project_exists=$(curl -s -u "$AUTH" "$HARBOR_URL/api/v2.0/projects" | jq -r --arg project "$project_name" '.[] | select(.name == $project) | .name')
+    project_exists=$(curl -s -H "Authorization: Basic $AUTH_TOKEN" "$HARBOR_URL/api/v2.0/projects" | jq -r --arg project "$project_name" '.[] | select(.name == $project) | .name')
     
     if [ -z "$project_exists" ]; then
         echo "❌ Проект '$project_name' не найден!"
         echo ""
         echo "Доступные проекты:"
-        curl -s -u "$AUTH" "$HARBOR_URL/api/v2.0/projects" | jq -r '.[].name'
+        curl -s -H "Authorization: Basic $AUTH_TOKEN" "$HARBOR_URL/api/v2.0/projects" | jq -r '.[].name'
         return 1
     fi
     
