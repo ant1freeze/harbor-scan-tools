@@ -37,6 +37,48 @@ show_help() {
     curl -s -u "$USERNAME:$PASSWORD" "$HARBOR_URL/api/v2.0/projects" | jq -r '.[].name' 2>/dev/null || echo "Не удалось получить список проектов"
 }
 
+# Функция для получения всех данных с пагинацией
+get_all_paginated() {
+    local url=$1
+    local page_size=${2:-100}
+    local all_data=""
+    local page=1
+    
+    while true; do
+        local current_url="${url}?page=${page}&page_size=${page_size}"
+        local response=$(curl -s -u "$USERNAME:$PASSWORD" "$current_url")
+        
+        if [ $? -ne 0 ]; then
+            echo "❌ Ошибка при получении данных с страницы $page" >&2
+            return 1
+        fi
+        
+        # Проверяем, есть ли данные на текущей странице
+        local page_data=$(echo "$response" | jq -r '.[]' 2>/dev/null)
+        if [ -z "$page_data" ] || [ "$page_data" = "null" ]; then
+            break
+        fi
+        
+        # Добавляем данные к общему результату
+        if [ -z "$all_data" ]; then
+            all_data="$page_data"
+        else
+            all_data="$all_data
+$page_data"
+        fi
+        
+        # Проверяем, есть ли следующая страница
+        local next_link=$(curl -s -I -u "$USERNAME:$PASSWORD" "$current_url" | grep -i "link:" | grep -o 'rel="next"' || true)
+        if [ -z "$next_link" ]; then
+            break
+        fi
+        
+        page=$((page + 1))
+    done
+    
+    echo "$all_data"
+}
+
 # Функция для запуска сканирования образа
 scan_artifact() {
     local project=$1
@@ -137,8 +179,8 @@ scan_project() {
     
     echo "🏗️  Проект: $project_name"
     
-    # Получаем репозитории проекта
-    repos=$(curl -s -u "$USERNAME:$PASSWORD" "$HARBOR_URL/api/v2.0/projects/$project_name/repositories" | jq -r '.[].name')
+    # Получаем репозитории проекта с пагинацией
+    repos=$(get_all_paginated "$HARBOR_URL/api/v2.0/projects/$project_name/repositories" | jq -r '.name')
     
     if [ -z "$repos" ]; then
         echo "❌ В проекте '$project_name' нет репозиториев!"
@@ -154,8 +196,8 @@ scan_project() {
         echo ""
         echo "  📦 Репозиторий: $repo_name"
         
-        # Получаем артефакты репозитория
-        artifacts=$(curl -s -u "$USERNAME:$PASSWORD" "$HARBOR_URL/api/v2.0/projects/$project_name/repositories/$repo_name/artifacts" | jq -r '.[].digest')
+        # Получаем артефакты репозитория с пагинацией
+        artifacts=$(get_all_paginated "$HARBOR_URL/api/v2.0/projects/$project_name/repositories/$repo_name/artifacts" | jq -r '.digest')
         
         if [ -z "$artifacts" ]; then
             echo "    ⚠️  В репозитории нет артефактов"
@@ -213,8 +255,8 @@ scan_all_projects() {
     
     echo "🚀 Начинаем сканирование..."
     
-    # Получаем все проекты
-    projects=$(curl -s -u "$USERNAME:$PASSWORD" "$HARBOR_URL/api/v2.0/projects" | jq -r '.[].name')
+    # Получаем все проекты с пагинацией
+    projects=$(get_all_paginated "$HARBOR_URL/api/v2.0/projects" | jq -r '.name')
     
     if [ -z "$projects" ]; then
         echo "❌ Проекты не найдены"
