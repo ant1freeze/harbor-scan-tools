@@ -1,0 +1,13 @@
+# Harbor Configuration Example
+# Скопируйте этот файл в harbor.conf и настройте под ваше окружение
+
+# URL Harbor Registry
+HARBOR_URL="http://localhost:8080"
+
+# Учетные данные
+USERNAME="admin"
+PASSWORD="Harbor12345"
+
+# Дополнительные настройки
+TIMEOUT=300
+VERBOSE=false

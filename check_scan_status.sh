@@ -2,9 +2,17 @@
 
 # Скрипт для проверки статуса сканирования образов в Harbor
 
-HARBOR_URL="http://localhost:8080"
-USERNAME="admin"
-PASSWORD="Harbor12345"
+# Загружаем конфигурацию
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_FILE="$SCRIPT_DIR/harbor.conf"
+
+if [ -f "$CONFIG_FILE" ]; then
+    source "$CONFIG_FILE"
+else
+    echo "❌ Файл конфигурации не найден: $CONFIG_FILE"
+    echo "Создайте файл harbor.conf с настройками подключения к Harbor"
+    exit 1
+fi
 
 echo "🔍 Проверка статуса сканирования образов в Harbor..."
 
