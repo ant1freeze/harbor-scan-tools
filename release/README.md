@@ -89,7 +89,8 @@ chmod +x *.sh
 ```bash
 # Harbor Configuration
 HARBOR_URL="http://localhost:8080"
-AUTH="robot$project+scanner:your_robot_token"  # Basic Auth: username:password
+USERNAME="robot$project+scanner"  # Робот-аккаунт
+PASSWORD="your_robot_token"       # Токен робот-аккаунта
 TIMEOUT=300
 VERBOSE=false
 ```
@@ -139,14 +140,10 @@ VERBOSE=false
 ### Параметры конфигурации:
 
 - `HARBOR_URL` - URL вашего Harbor Registry
-- `AUTH` - Basic Auth в формате `username:password` или `robot$project+scanner:token`
+- `USERNAME` - имя пользователя для аутентификации
+- `PASSWORD` - пароль для аутентификации
 - `TIMEOUT` - таймаут для операций (в секундах)
 - `VERBOSE` - подробный вывод (true/false)
-
-**Примеры AUTH:**
-- `AUTH="admin:Harbor12345"` - обычный пользователь
-- `AUTH="robot$project+scanner:abc123def456"` - робот-аккаунт
-- `AUTH="robot$library+scanner:token123"` - робот для проекта library
 
 **⚠️ Важно:** Файл `harbor.conf` исключен из Git для безопасности. Не коммитьте файлы с реальными паролями!
 

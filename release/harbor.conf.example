@@ -4,10 +4,10 @@
 # URL Harbor Registry
 HARBOR_URL="http://localhost:8080"
 
-# Учетные данные (Basic Auth)
+# Учетные данные
 # Для автоматизации рекомендуется использовать робот-аккаунт
-# Формат: username:password или robot$project+scanner:token
-AUTH="robot$project+scanner:your_robot_token"
+USERNAME="robot$project+scanner"  # Робот-аккаунт
+PASSWORD="your_robot_token"       # Токен робот-аккаунта
 
 # Дополнительные настройки
 TIMEOUT=300
