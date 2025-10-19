@@ -41,14 +41,14 @@ show_help() {
     echo "  $0 --all --force              # Принудительно сканировать все проекты"
     echo ""
     echo "Доступные проекты:"
-    get_all_paginated "$HARBOR_URL/api/v2.0/projects" | jq -r '.name' 2>/dev/null || echo "Не удалось получить список проектов"
+    get_all_paginated "$HARBOR_URL/api/v2.0/projects" | jq -r '.[].name' 2>/dev/null || echo "Не удалось получить список проектов"
 }
 
 # Функция для получения всех данных с пагинацией
 get_all_paginated() {
     local url=$1
     local page_size=${2:-100}
-    local all_data=""
+    local temp_file=$(mktemp)
     local page=1
     
     while true; do
@@ -57,22 +57,18 @@ get_all_paginated() {
         
         if [ $? -ne 0 ]; then
             echo "❌ Ошибка при получении данных с страницы $page" >&2
+            rm -f "$temp_file"
             return 1
         fi
         
         # Проверяем, есть ли данные на текущей странице
-        local page_data=$(echo "$response" | jq -r '.[]' 2>/dev/null)
+        local page_data=$(echo "$response" | jq -c '.[]' 2>/dev/null)
         if [ -z "$page_data" ] || [ "$page_data" = "null" ]; then
             break
         fi
         
-        # Добавляем данные к общему результату
-        if [ -z "$all_data" ]; then
-            all_data="$page_data"
-        else
-            all_data="$all_data
-$page_data"
-        fi
+        # Добавляем данные во временный файл
+        echo "$page_data" >> "$temp_file"
         
         # Проверяем, есть ли следующая страница
         local next_link=$(curl -s -I -H "Authorization: Basic $AUTH_TOKEN" "$current_url" | grep -i "link:" | grep -o 'rel="next"' || true)
@@ -83,7 +79,14 @@ $page_data"
         page=$((page + 1))
     done
     
-    echo "$all_data"
+    # Возвращаем данные в формате JSON массива
+    if [ -s "$temp_file" ]; then
+        echo "[$(cat "$temp_file" | tr '\n' ',' | sed 's/,$//')]"
+    else
+        echo "[]"
+    fi
+    
+    rm -f "$temp_file"
 }
 
 # Функция для запуска сканирования образа
@@ -187,7 +190,7 @@ scan_project() {
     echo "🏗️  Проект: $project_name"
     
     # Получаем репозитории проекта с пагинацией
-    repos=$(get_all_paginated "$HARBOR_URL/api/v2.0/projects/$project_name/repositories" | jq -r '.name')
+    repos=$(get_all_paginated "$HARBOR_URL/api/v2.0/projects/$project_name/repositories" | jq -r '.[].name')
     
     if [ -z "$repos" ]; then
         echo "❌ В проекте '$project_name' нет репозиториев!"
@@ -204,7 +207,7 @@ scan_project() {
         echo "  📦 Репозиторий: $repo_name"
         
         # Получаем артефакты репозитория с пагинацией
-        artifacts=$(get_all_paginated "$HARBOR_URL/api/v2.0/projects/$project_name/repositories/$repo_name/artifacts" | jq -r '.digest')
+        artifacts=$(get_all_paginated "$HARBOR_URL/api/v2.0/projects/$project_name/repositories/$repo_name/artifacts" | jq -r '.[].digest')
         
         if [ -z "$artifacts" ]; then
             echo "    ⚠️  В репозитории нет артефактов"
@@ -263,7 +266,7 @@ scan_all_projects() {
     echo "🚀 Начинаем сканирование..."
     
     # Получаем все проекты с пагинацией
-    projects=$(get_all_paginated "$HARBOR_URL/api/v2.0/projects" | jq -r '.name')
+    projects=$(get_all_paginated "$HARBOR_URL/api/v2.0/projects" | jq -r '.[].name')
     
     if [ -z "$projects" ]; then
         echo "❌ Проекты не найдены"
