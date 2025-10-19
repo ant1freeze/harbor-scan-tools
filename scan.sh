@@ -99,7 +99,9 @@ scan_artifact() {
     local repo=$2
     local digest=$3
     
-    echo "📦 Сканирование: $project/$repo@${digest:0:19}..."
+    # Декодируем имя репозитория для вывода
+    local repo_display=$(echo "$repo" | sed 's/%252F/\//g')
+    echo "📦 Сканирование: $project/$repo_display@${digest:0:19}..."
     
     response=$(curl -s -X POST -H "Authorization: Basic $AUTH_TOKEN" \
         -H "Content-Type: application/json" \
@@ -108,10 +110,10 @@ scan_artifact() {
         "$HARBOR_URL/api/v2.0/projects/$project/repositories/$repo/artifacts/$digest/scan")
     
     if [ $? -eq 0 ]; then
-        echo "✅ Сканирование запущено для $project/$repo@${digest:0:19}..."
+        echo "✅ Сканирование запущено для $project/$repo_display@${digest:0:19}..."
         return 0
     else
-        echo "❌ Ошибка сканирования для $project/$repo@${digest:0:19}..."
+        echo "❌ Ошибка сканирования для $project/$repo_display@${digest:0:19}..."
         return 1
     fi
 }
@@ -137,34 +139,39 @@ check_artifact_scan() {
                 local low=$(echo "$summary" | jq -r '.summary.Low // 0')
                 local critical=$(echo "$summary" | jq -r '.summary.Critical // 0')
                 
+                local repo_display=$(echo "$repo" | sed 's/%252F/\//g')
                 if [ "$FORCE_SCAN" = true ]; then
-                    echo "🔄 $project/$repo@${digest:0:19}... - Принудительное пересканирование (было: $total уязвимостей)"
+                    echo "🔄 $project/$repo_display@${digest:0:19}... - Принудительное пересканирование (было: $total уязвимостей)"
                     return 0  # Запустим сканирование
                 else
-                    echo "✅ $project/$repo@${digest:0:19}... - Уже отсканирован (Уязвимостей: $total, C:$critical H:$high M:$medium L:$low)"
+                    echo "✅ $project/$repo_display@${digest:0:19}... - Уже отсканирован (Уязвимостей: $total, C:$critical H:$high M:$medium L:$low)"
                     return 1  # Уже отсканирован
                 fi
                 ;;
             "Running")
+                local repo_display=$(echo "$repo" | sed 's/%252F/\//g')
                 if [ "$FORCE_SCAN" = true ]; then
-                    echo "🔄 $project/$repo@${digest:0:19}... - Принудительное пересканирование (было выполняется)"
+                    echo "🔄 $project/$repo_display@${digest:0:19}... - Принудительное пересканирование (было выполняется)"
                     return 0  # Запустим сканирование
                 else
-                    echo "🔄 $project/$repo@${digest:0:19}... - Уже выполняется"
+                    echo "🔄 $project/$repo_display@${digest:0:19}... - Уже выполняется"
                     return 1  # Уже выполняется
                 fi
                 ;;
             "Error")
-                echo "❌ $project/$repo@${digest:0:19}... - Ошибка сканирования, попробуем еще раз"
+                local repo_display=$(echo "$repo" | sed 's/%252F/\//g')
+                echo "❌ $project/$repo_display@${digest:0:19}... - Ошибка сканирования, попробуем еще раз"
                 return 0  # Попробуем еще раз
                 ;;
             *)
-                echo "ℹ️  $project/$repo@${digest:0:19}... - Статус: $status"
+                local repo_display=$(echo "$repo" | sed 's/%252F/\//g')
+                echo "ℹ️  $project/$repo_display@${digest:0:19}... - Статус: $status"
                 return 0  # Попробуем запустить
                 ;;
         esac
     else
-        echo "⚠️  $project/$repo@${digest:0:19}... - Нет данных о сканировании"
+        local repo_display=$(echo "$repo" | sed 's/%252F/\//g')
+        echo "⚠️  $project/$repo_display@${digest:0:19}... - Нет данных о сканировании"
         return 0  # Запустим сканирование
     fi
 }

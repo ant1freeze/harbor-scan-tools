@@ -136,7 +136,9 @@ check_artifact_scan() {
                 fi
                 
                 if [ "$show_all" = true ]; then
-                    echo "✅ $project/$repo@${digest:0:19}... - $severity_level"
+                    # Декодируем имя репозитория для вывода
+                    local repo_display=$(echo "$repo" | sed 's/%252F/\//g')
+                    echo "✅ $project/$repo_display@${digest:0:19}... - $severity_level"
                     echo "    📊 Уязвимости: $total (C:$critical H:$high M:$medium L:$low U:$unknown)"
                     echo "    🔧 Исправимо: $fixable"
                 fi
@@ -168,24 +170,29 @@ check_artifact_scan() {
                 return 0  # Отсканирован
                 ;;
             "Running")
-                echo "🔄 $project/$repo@${digest:0:19}... - Выполняется сканирование"
+                local repo_display=$(echo "$repo" | sed 's/%252F/\//g')
+                echo "🔄 $project/$repo_display@${digest:0:19}... - Выполняется сканирование"
                 return 1  # Не отсканирован
                 ;;
             "Error")
-                echo "❌ $project/$repo@${digest:0:19}... - Ошибка сканирования"
+                local repo_display=$(echo "$repo" | sed 's/%252F/\//g')
+                echo "❌ $project/$repo_display@${digest:0:19}... - Ошибка сканирования"
                 return 1  # Не отсканирован
                 ;;
             "Pending")
-                echo "⏳ $project/$repo@${digest:0:19}... - Ожидает сканирования"
+                local repo_display=$(echo "$repo" | sed 's/%252F/\//g')
+                echo "⏳ $project/$repo_display@${digest:0:19}... - Ожидает сканирования"
                 return 1  # Не отсканирован
                 ;;
             *)
-                echo "❓ $project/$repo@${digest:0:19}... - Неизвестный статус: $status"
+                local repo_display=$(echo "$repo" | sed 's/%252F/\//g')
+                echo "❓ $project/$repo_display@${digest:0:19}... - Неизвестный статус: $status"
                 return 1  # Не отсканирован
                 ;;
         esac
     else
-        echo "⚠️  $project/$repo@${digest:0:19}... - Нет данных о сканировании"
+        local repo_display=$(echo "$repo" | sed 's/%252F/\//g')
+        echo "⚠️  $project/$repo_display@${digest:0:19}... - Нет данных о сканировании"
         return 1  # Не отсканирован
     fi
 }
