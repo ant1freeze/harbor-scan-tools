@@ -198,13 +198,13 @@ check_project() {
     echo "🔍 Проверка статуса сканирования образов в проекте: $project_name"
     
     # Проверяем, существует ли проект
-    project_exists=$(curl -s -H "Authorization: Basic $AUTH_TOKEN" "$HARBOR_URL/api/v2.0/projects" | jq -r --arg project "$project_name" '.[] | select(.name == $project) | .name')
+    project_exists=$(get_all_paginated "$HARBOR_URL/api/v2.0/projects" | jq -r --arg project "$project_name" '.[] | select(.name == $project) | .name')
     
     if [ -z "$project_exists" ]; then
         echo "❌ Проект '$project_name' не найден!"
         echo ""
         echo "Доступные проекты:"
-        curl -s -H "Authorization: Basic $AUTH_TOKEN" "$HARBOR_URL/api/v2.0/projects" | jq -r '.[].name'
+        get_all_paginated "$HARBOR_URL/api/v2.0/projects" | jq -r '.[].name'
         return 1
     fi
     

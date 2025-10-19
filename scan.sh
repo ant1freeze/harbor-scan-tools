@@ -22,6 +22,10 @@ show_help() {
     CONFIG_FILE="$SCRIPT_DIR/harbor.conf"
     if [ -f "$CONFIG_FILE" ]; then
         source "$CONFIG_FILE"
+    else
+        echo "❌ Файл конфигурации harbor.conf не найден"
+        echo "Создайте файл harbor.conf с настройками подключения к Harbor"
+        exit 1
     fi
     
     echo "Использование: $0 [ОПЦИИ] [ПРОЕКТ]"
@@ -177,13 +181,13 @@ scan_project() {
     fi
     
     # Проверяем, существует ли проект
-    project_exists=$(curl -s -H "Authorization: Basic $AUTH_TOKEN" "$HARBOR_URL/api/v2.0/projects" | jq -r --arg project "$project_name" '.[] | select(.name == $project) | .name')
+    project_exists=$(get_all_paginated "$HARBOR_URL/api/v2.0/projects" | jq -r --arg project "$project_name" '.[] | select(.name == $project) | .name')
     
     if [ -z "$project_exists" ]; then
         echo "❌ Проект '$project_name' не найден!"
         echo ""
         echo "Доступные проекты:"
-        curl -s -H "Authorization: Basic $AUTH_TOKEN" "$HARBOR_URL/api/v2.0/projects" | jq -r '.[].name'
+        get_all_paginated "$HARBOR_URL/api/v2.0/projects" | jq -r '.[].name'
         return 1
     fi
     
