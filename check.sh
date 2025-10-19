@@ -253,7 +253,7 @@ check_project() {
         repo_name=$(echo $repo | sed "s/$project_name\///")
         
         # Получаем артефакты репозитория с пагинацией
-        artifacts=$(get_all_paginated "$HARBOR_URL/api/v2.0/projects/$project_name/repositories/$repo_name/artifacts" | jq -r '.[].digest')
+        artifacts=$(get_all_paginated "$HARBOR_URL/api/v2.0/projects/$project_name/repositories/$repo_name/artifacts" | jq -r 'if length > 0 then .[].digest else empty end')
         
         if [ -z "$artifacts" ]; then
             continue
