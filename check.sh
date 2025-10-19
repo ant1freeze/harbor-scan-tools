@@ -251,9 +251,11 @@ check_project() {
     
     for repo in $repos; do
         repo_name=$(echo $repo | sed "s/^$project_name\///")
+        # Экранируем слэши для Harbor API
+        repo_name_encoded=$(echo $repo_name | sed 's/\//%252F/g')
         
         # Получаем артефакты репозитория с пагинацией
-        artifacts=$(get_all_paginated "$HARBOR_URL/api/v2.0/projects/$project_name/repositories/$repo_name/artifacts" | jq -r 'if length > 0 then .[].digest else empty end')
+        artifacts=$(get_all_paginated "$HARBOR_URL/api/v2.0/projects/$project_name/repositories/$repo_name_encoded/artifacts" | jq -r 'if length > 0 then .[].digest else empty end')
         
         if [ -z "$artifacts" ]; then
             continue
@@ -262,14 +264,14 @@ check_project() {
         for digest in $artifacts; do
             total_artifacts=$((total_artifacts + 1))
             
-            if check_artifact_scan "$project_name" "$repo_name" "$digest" "$show_all"; then
+            if check_artifact_scan "$project_name" "$repo_name_encoded" "$digest" "$show_all"; then
                 scanned_count=$((scanned_count + 1))
             else
                 unscanned_count=$((unscanned_count + 1))
                 
                 # Дополнительная статистика для неотсканированных
                 scan_info=$(curl -s -H "Authorization: Basic $AUTH_TOKEN" \
-                    "$HARBOR_URL/api/v2.0/projects/$project_name/repositories/$repo_name/artifacts/$digest?with_scan_overview=true" | \
+                    "$HARBOR_URL/api/v2.0/projects/$project_name/repositories/$repo_name_encoded/artifacts/$digest?with_scan_overview=true" | \
                     jq -r '.scan_overview."application/vnd.security.vulnerability.report; version=1.1"')
                 
                 if [ "$scan_info" != "null" ]; then

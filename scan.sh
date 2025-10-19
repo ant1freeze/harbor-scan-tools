@@ -207,11 +207,13 @@ scan_project() {
     
     for repo in $repos; do
         repo_name=$(echo $repo | sed "s/^$project_name\///")
+        # Экранируем слэши для Harbor API
+        repo_name_encoded=$(echo $repo_name | sed 's/\//%252F/g')
         echo ""
         echo "  📦 Репозиторий: $repo_name"
         
         # Получаем артефакты репозитория с пагинацией
-        artifacts=$(get_all_paginated "$HARBOR_URL/api/v2.0/projects/$project_name/repositories/$repo_name/artifacts" | jq -r '.[].digest')
+        artifacts=$(get_all_paginated "$HARBOR_URL/api/v2.0/projects/$project_name/repositories/$repo_name_encoded/artifacts" | jq -r '.[].digest')
         
         if [ -z "$artifacts" ]; then
             echo "    ⚠️  В репозитории нет артефактов"
@@ -220,9 +222,9 @@ scan_project() {
         
         for digest in $artifacts; do
             # Сначала проверяем статус
-            if check_artifact_scan "$project_name" "$repo_name" "$digest"; then
+            if check_artifact_scan "$project_name" "$repo_name_encoded" "$digest"; then
                 # Если нужно запустить сканирование
-                if scan_artifact "$project_name" "$repo_name" "$digest"; then
+                if scan_artifact "$project_name" "$repo_name_encoded" "$digest"; then
                     total_scanned=$((total_scanned + 1))
                 else
                     errors=$((errors + 1))
