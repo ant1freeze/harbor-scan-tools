@@ -17,6 +17,13 @@ fi
 
 # Функция для отображения справки
 show_help() {
+    # Загружаем конфигурацию для отображения списка проектов
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    CONFIG_FILE="$SCRIPT_DIR/harbor.conf"
+    if [ -f "$CONFIG_FILE" ]; then
+        source "$CONFIG_FILE"
+    fi
+    
     echo "Использование: $0 [ОПЦИИ] [ПРОЕКТ]"
     echo ""
     echo "ОПЦИИ:"
@@ -34,7 +41,7 @@ show_help() {
     echo "  $0 --all --force              # Принудительно сканировать все проекты"
     echo ""
     echo "Доступные проекты:"
-    curl -s -H "Authorization: Basic $AUTH_TOKEN" "$HARBOR_URL/api/v2.0/projects" | jq -r '.[].name' 2>/dev/null || echo "Не удалось получить список проектов"
+    get_all_paginated "$HARBOR_URL/api/v2.0/projects" | jq -r '.name' 2>/dev/null || echo "Не удалось получить список проектов"
 }
 
 # Функция для получения всех данных с пагинацией
