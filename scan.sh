@@ -206,7 +206,7 @@ scan_project() {
     errors=0
     
     for repo in $repos; do
-        repo_name=$(echo $repo | sed "s/$project_name\///")
+        repo_name=$(echo $repo | sed "s/^$project_name\///")
         echo ""
         echo "  📦 Репозиторий: $repo_name"
         
